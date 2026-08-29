@@ -5,7 +5,7 @@ import { Plus, Trash2, Edit } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const CATEGORIES = ["Mahar ( Uang + Emas )", "Seserahan" ,"Biaya Gedung", "Undangan", "Souvenir", "Katering", "Penginapan", "Paket Wedding Lengkap", "Transportasi", "Mc + Entertaint", "Pengeluaran Lainnya"];
-const COLORS = ['#879A83', '#D4AF37', '#2C362A', '#E5C158', '#A3B19F', '#B5952F', '#F4A261', '#E76F51', '#264653', '#1D3557'];
+const COLORS = ['#FF0000', '#FF9100', '#F7FC00', '#2BFF00', '#002FFF', '#FF00DD', '#8E079B', '#017FA5', '#03FFD5C2', '#030405'];
 
 export default function BudgetManager() {
   const { budgets = [], setBudgets } = useContext(WeddingContext) || {};
