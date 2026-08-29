@@ -7,7 +7,7 @@ const BASE_URL = "https://wedding-invitation-13.netlify.app/?to=";
 
 export default function GuestList() {
   const { guests = [], setGuests } = useContext(WeddingContext) || {};
-  const [newItem, setNewItem] = useState({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' });
+  const [newItem, setNewItem] = useState({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim', customLink: '' });
   const [editId, setEditId] = useState(null);
 
   // State untuk Search, Filter, & Urutkan
@@ -15,40 +15,63 @@ export default function GuestList() {
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [sortBy, setSortBy] = useState('default');
 
+  // Otomatis isi customLink saat nama diketik
+  const handleNamaChange = (e) => {
+    const namaTamu = e.target.value;
+    setNewItem(prev => ({
+      ...prev,
+      nama: namaTamu,
+      customLink: namaTamu.trim() ? `${BASE_URL}${encodeURIComponent(namaTamu.trim())}` : ''
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Hanya kirim kolom standar yang sudah pasti ada di database Supabase (tanpa 'link')
-    const payload = {
-      nama: newItem.nama,
-      pihak: newItem.pihak,
-      hubungan: newItem.hubungan,
-      alamat: newItem.alamat,
-      status: newItem.status
-    };
-
     if (editId) {
-      const updated = { ...newItem, id: editId };
+      const payload = {
+        nama: newItem.nama,
+        pihak: newItem.pihak,
+        hubungan: newItem.hubungan,
+        alamat: newItem.alamat,
+        status: newItem.status
+      };
       const { error } = await supabase.from('guests').update(payload).eq('id', editId);
       if (!error) {
-        setGuests(guests.map(g => g.id === editId ? updated : g));
+        setGuests(guests.map(g => g.id === editId ? { ...newItem, id: editId } : g));
         setEditId(null);
       } else {
         alert("Gagal update tamu: " + error.message);
       }
     } else {
-      const dataToInsert = { ...newItem, id: Date.now() };
-      const { error } = await supabase.from('guests').insert([payload]); // Kirim payload bersih
+      // Sertakan 'id' agar tidak terjadi error null value pada kolom id
+      const newId = Date.now();
+      const payload = {
+        id: newId,
+        nama: newItem.nama,
+        pihak: newItem.pihak,
+        hubungan: newItem.hubungan,
+        alamat: newItem.alamat,
+        status: newItem.status
+      };
+      
+      const { error } = await supabase.from('guests').insert([payload]);
       if (!error) {
-        setGuests([...guests, dataToInsert]);
+        setGuests([...guests, { ...newItem, id: newId }]);
       } else {
         alert("Gagal menambah tamu: " + error.message);
       }
     }
-    setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' });
+    setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim', customLink: '' });
   };
 
-  const handleEdit = (item) => { setEditId(item.id); setNewItem({ ...item }); };
+  const handleEdit = (item) => { 
+    setEditId(item.id); 
+    setNewItem({ 
+      ...item, 
+      customLink: item.customLink || (item.nama ? `${BASE_URL}${encodeURIComponent(item.nama)}` : '') 
+    }); 
+  };
   
   const handleDelete = async (id) => {
     const { error } = await supabase.from('guests').delete().eq('id', id);
@@ -62,13 +85,13 @@ export default function GuestList() {
 
   // Logika Pencarian, Filter, & Urutkan data tamu
   const filteredGuests = guests.filter(g => {
-    const generatedLink = `${BASE_URL}${encodeURIComponent(g.nama || '')}`;
+    const activeLink = g.customLink || `${BASE_URL}${encodeURIComponent(g.nama || '')}`;
     const matchesSearch = 
       g.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.hubungan.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.pihak.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      generatedLink.toLowerCase().includes(searchTerm.toLowerCase());
+      activeLink.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter = filterStatus === 'Semua' || g.status === filterStatus;
 
@@ -91,15 +114,26 @@ export default function GuestList() {
             required 
             className="p-3 border rounded-lg text-sm lg:col-span-2 outline-none focus:ring-2 focus:ring-sage-500" 
             value={newItem.nama} 
-            onChange={e => setNewItem({...newItem, nama: e.target.value})} 
+            onChange={handleNamaChange} 
           />
           <select className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.pihak} onChange={e => setNewItem({...newItem, pihak: e.target.value})}><option>Azzam</option><option>Irma</option><option>Bersama</option></select>
           <input type="text" placeholder="Hubungan (Cth: Teman Kerja)" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.hubungan} onChange={e => setNewItem({...newItem, hubungan: e.target.value})} />
           <input type="text" placeholder="Alamat / Kota" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.alamat} onChange={e => setNewItem({...newItem, alamat: e.target.value})} />
           
+          <div className="lg:col-span-5 flex flex-col gap-1">
+            <label className="text-xs font-semibold text-gray-500">Link Undangan Digital (Otomatis dari nama tamu, bisa diedit manual jika perlu):</label>
+            <input 
+              type="url" 
+              placeholder="https://wedding-invitation-13.netlify.app/?to=NamaTamu" 
+              className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-mono text-xs" 
+              value={newItem.customLink} 
+              onChange={e => setNewItem({...newItem, customLink: e.target.value})} 
+            />
+          </div>
+          
           <div className="flex gap-2 lg:col-span-5">
             <button type="submit" className="flex-1 bg-sage-500 text-white p-3 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan Perubahan' : '+ Tambah Tamu'}</button>
-            {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' })}} className="bg-gray-100 px-6 rounded-lg font-medium">Batal</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim', customLink: '' })}} className="bg-gray-100 px-6 rounded-lg font-medium">Batal</button>}
           </div>
         </form>
       </div>
@@ -109,7 +143,7 @@ export default function GuestList() {
           <Search size={18} className="absolute left-3 top-3 text-gray-400" />
           <input 
             type="text" 
-            placeholder="Cari nama, alamat, hubungan..." 
+            placeholder="Cari nama, alamat, hubungan, link..." 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)} 
             className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
@@ -155,7 +189,7 @@ export default function GuestList() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredGuests?.map(g => {
-              const guestLink = `${BASE_URL}${encodeURIComponent(g.nama || '')}`;
+              const finalLink = g.customLink || `${BASE_URL}${encodeURIComponent(g.nama || '')}`;
               return (
                 <tr key={g.id} className="hover:bg-gray-50">
                   <td className="p-4 font-medium text-sage-900">{g.nama}</td>
@@ -163,7 +197,7 @@ export default function GuestList() {
                   <td className="p-4">{g.hubungan}</td>
                   <td className="p-4 text-gray-500">{g.alamat}</td>
                   <td className="p-4">
-                    <a href={guestLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 text-xs font-medium">
+                    <a href={finalLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 text-xs font-medium">
                       <ExternalLink size={14} /> Buka Link
                     </a>
                   </td>
