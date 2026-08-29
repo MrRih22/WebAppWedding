@@ -9,13 +9,13 @@ const COLORS = ['#879A83', '#D4AF37', '#2C362A', '#E5C158', '#A3B19F', '#B5952F'
 
 export default function BudgetManager() {
   const { budgets = [], setBudgets } = useContext(WeddingContext) || {};
-  const [newItem, setNewItem] = useState({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
+  const [newItem, setNewItem] = useState({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
   const [editId, setEditId] = useState(null); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Pastikan tipe data angka dikonversi dengan benar agar tidak ditolak database
+    // Menggunakan key 'islunas' (huruf kecil semua) agar cocok dengan database
     const payload = {
       kategori: newItem.kategori,
       deskripsi: newItem.deskripsi,
@@ -23,7 +23,7 @@ export default function BudgetManager() {
       aktual: Number(newItem.aktual) || 0,
       dibayar: Number(newItem.dibayar) || 0,
       jatuhTempo: newItem.jatuhTempo,
-      isLunas: Boolean(newItem.isLunas)
+      islunas: Boolean(newItem.islunas)
     };
 
     if (editId) {
@@ -31,7 +31,7 @@ export default function BudgetManager() {
       if (!error) {
         setBudgets(budgets.map(b => b.id === editId ? { ...payload, id: editId } : b));
         setEditId(null);
-        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
       } else {
         alert("Gagal update ke Supabase: " + error.message);
       }
@@ -42,7 +42,7 @@ export default function BudgetManager() {
       const { error } = await supabase.from('budgets').insert([dataToInsert]);
       if (!error) {
         setBudgets([...budgets, dataToInsert]);
-        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
       } else {
         alert("Gagal insert ke Supabase: " + error.message);
       }
@@ -51,7 +51,10 @@ export default function BudgetManager() {
 
   const handleEdit = (item) => { 
     setEditId(item.id); 
-    setNewItem({...item}); 
+    setNewItem({
+      ...item,
+      islunas: item.islunas !== undefined ? item.islunas : (item.isLunas || false)
+    }); 
   };
 
   const handleDelete = async (id) => {
@@ -64,10 +67,12 @@ export default function BudgetManager() {
   };
 
   const handleToggleLunas = async (item) => {
-    const newStatus = !item.isLunas;
-    const { error } = await supabase.from('budgets').update({ isLunas: newStatus }).eq('id', item.id);
+    const currentStatus = item.islunas !== undefined ? item.islunas : item.isLunas;
+    const newStatus = !currentStatus;
+    
+    const { error } = await supabase.from('budgets').update({ islunas: newStatus }).eq('id', item.id);
     if (!error) {
-      setBudgets(budgets.map(b => b.id === item.id ? { ...b, isLunas: newStatus } : b));
+      setBudgets(budgets.map(b => b.id === item.id ? { ...b, islunas: newStatus, isLunas: newStatus } : b));
     } else {
       alert("Gagal mengubah status lunas: " + error.message);
     }
@@ -97,7 +102,7 @@ export default function BudgetManager() {
             
             <div className="flex gap-2">
               <button type="submit" className="flex-1 bg-sage-500 text-white p-2.5 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan' : '+ Tambah'}</button>
-              {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false })}} className="bg-gray-100 p-2.5 rounded-lg">Batal</button>}
+              {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false })}} className="bg-gray-100 p-2.5 rounded-lg">Batal</button>}
             </div>
           </form>
         </div>
@@ -108,17 +113,20 @@ export default function BudgetManager() {
       <div className="bg-white rounded-2xl overflow-x-auto shadow-sm border border-sage-50">
         <table className="w-full text-sm text-left whitespace-nowrap"><thead className="bg-sage-50 text-sage-900"><tr><th className="p-4">Kategori & Deskripsi</th><th className="p-4">Rencana</th><th className="p-4">Aktual</th><th className="p-4">Dibayar</th><th className="p-4">Sisa</th><th className="p-4 text-center">Lunas</th><th className="p-4 text-center">Aksi</th></tr></thead>
           <tbody className="divide-y divide-gray-100">
-            {budgets?.map(item => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="p-4"><div className="font-medium text-sage-900">{item.deskripsi}</div><div className="text-xs text-gray-500">{item.kategori}</div></td>
-                <td className="p-4">{formatIDR(item.rencana)}</td>
-                <td className="p-4">{formatIDR(item.aktual)}</td>
-                <td className="p-4 text-sage-500 font-medium">{formatIDR(item.dibayar)}</td>
-                <td className="p-4 text-red-400 font-medium">{formatIDR(Number(item.aktual||0) - Number(item.dibayar||0))}</td>
-                <td className="p-4 text-center"><input type="checkbox" checked={item.isLunas} onChange={() => handleToggleLunas(item)} className="w-4 h-4 accent-gold-500 cursor-pointer" /></td>
-                <td className="p-4"><div className="flex justify-center gap-3"><button onClick={() => handleEdit(item)} className="text-gray-400 hover:text-blue-500"><Edit size={18} /></button><button onClick={() => handleDelete(item.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={18} /></button></div></td>
-              </tr>
-            ))}
+            {budgets?.map(item => {
+              const statusLunas = item.islunas !== undefined ? item.islunas : item.isLunas;
+              return (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="p-4"><div className="font-medium text-sage-900">{item.deskripsi}</div><div className="text-xs text-gray-500">{item.kategori}</div></td>
+                  <td className="p-4">{formatIDR(item.rencana)}</td>
+                  <td className="p-4">{formatIDR(item.aktual)}</td>
+                  <td className="p-4 text-sage-500 font-medium">{formatIDR(item.dibayar)}</td>
+                  <td className="p-4 text-red-400 font-medium">{formatIDR(Number(item.aktual||0) - Number(item.dibayar||0))}</td>
+                  <td className="p-4 text-center"><input type="checkbox" checked={!!statusLunas} onChange={() => handleToggleLunas(item)} className="w-4 h-4 accent-gold-500 cursor-pointer" /></td>
+                  <td className="p-4"><div className="flex justify-center gap-3"><button onClick={() => handleEdit(item)} className="text-gray-400 hover:text-blue-500"><Edit size={18} /></button><button onClick={() => handleDelete(item.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={18} /></button></div></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
