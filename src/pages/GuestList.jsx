@@ -1,12 +1,17 @@
 import React, { useContext, useState } from 'react';
 import { WeddingContext } from '../context/WeddingContext';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Plus, Trash2, Edit, ArrowUpDown, Filter, Search } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 export default function GuestList() {
   const { guests = [], setGuests } = useContext(WeddingContext) || {};
   const [newItem, setNewItem] = useState({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' });
   const [editId, setEditId] = useState(null);
+
+  // State untuk Search, Filter, & Urutkan
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('Semua');
+  const [sortBy, setSortBy] = useState('default');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,6 +48,24 @@ export default function GuestList() {
     if (!error) setGuests(guests.map(g => g.id === item.id ? { ...g, status: newStatus } : g));
   };
 
+  // Logika Pencarian, Filter, & Urutkan data tamu
+  const filteredGuests = guests.filter(g => {
+    const matchesSearch = 
+      g.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.hubungan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.pihak.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = filterStatus === 'Semua' || g.status === filterStatus;
+
+    return matchesSearch && matchesFilter;
+  }).sort((a, b) => {
+    if (sortBy === 'namaAsc') return a.nama.localeCompare(b.nama);
+    if (sortBy === 'namaDesc') return b.nama.localeCompare(a.nama);
+    if (sortBy === 'pihakAsc') return a.pihak.localeCompare(b.pihak);
+    return 0; // Default (Waktu input)
+  });
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50">
@@ -60,6 +83,46 @@ export default function GuestList() {
         </form>
       </div>
 
+      {/* Bagian Search, Filter & Urutkan Tamu */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-sage-50 flex flex-col lg:flex-row justify-between items-center gap-4">
+        {/* Kolom Search Manual */}
+        <div className="relative w-full lg:w-1/3">
+          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Cari nama, alamat, hubungan..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+          {/* Filter Status */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Filter size={18} className="text-sage-700" />
+            <span className="text-sm font-bold text-sage-900">Status:</span>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+              <option value="Semua">Semua Status</option>
+              <option value="Belum Dikirim">Belum Dikirim</option>
+              <option value="Sudah Dikirim">Sudah Dikirim</option>
+            </select>
+          </div>
+
+          {/* Urutkan */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <ArrowUpDown size={18} className="text-sage-700" />
+            <span className="text-sm font-bold text-sage-900">Urutkan:</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+              <option value="default">Default</option>
+              <option value="namaAsc">Nama (A - Z)</option>
+              <option value="namaDesc">Nama (Z - A)</option>
+              <option value="pihakAsc">Pihak Pengundang</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl overflow-x-auto shadow-sm border border-sage-50">
         <table className="w-full text-sm text-left whitespace-nowrap">
           <thead className="bg-sage-50 text-sage-900">
@@ -73,7 +136,7 @@ export default function GuestList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {guests?.map(g => (
+            {filteredGuests?.map(g => (
               <tr key={g.id} className="hover:bg-gray-50">
                 <td className="p-4 font-medium text-sage-900">{g.nama}</td>
                 <td className="p-4 font-semibold text-xs text-sage-600">{g.pihak}</td>
@@ -91,14 +154,14 @@ export default function GuestList() {
                 </td>
                 <td className="p-4">
                   <div className="flex justify-center gap-3">
-                    <button onClick={() => handleEdit(g)} className="text-gray-400 hover:text-blue-500"><Edit size={18} /></button>
-                    <button onClick={() => handleDelete(g.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={18} /></button>
+                    <button onClick={() => handleEdit(g)} className="text-gray-400 hover:text-blue-500 transition-colors"><Edit size={18} /></button>
+                    <button onClick={() => handleDelete(g.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                   </div>
                 </td>
               </tr>
             ))}
-            {(!guests || guests.length === 0) && (
-              <tr><td colSpan="6" className="p-8 text-center text-gray-400">Belum ada daftar tamu undangan.</td></tr>
+            {(!filteredGuests || filteredGuests.length === 0) && (
+              <tr><td colSpan="6" className="p-8 text-center text-gray-400">Tidak ada daftar tamu yang sesuai dengan pencarian.</td></tr>
             )}
           </tbody>
         </table>
