@@ -39,17 +39,14 @@ export default function Layout({ children }) {
           </button>
         </div>
       </aside>
-
       <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 w-full overflow-x-hidden">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-sage-50 mb-8">
           <div className="flex justify-between items-end mb-2">
-            <div>
-              <h3 className="text-lg font-bold text-sage-900">Kesiapan Rencana Wedding</h3>
-            </div>
+            <div><h3 className="text-lg font-bold text-sage-900">Kesiapan Rencana Wedding</h3></div>
             <span className="text-2xl font-serif text-gold-500">{overallProgress}%</span>
           </div>
           <div className="w-full bg-sage-100 rounded-full h-3">
-            <div className="bg-gold-500 h-3 rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallProgress}%` }}></div>
+            <div className="bg-gold-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${overallProgress}%` }}></div>
           </div>
         </div>
         <div className="animate-in fade-in duration-500">{children}</div>
