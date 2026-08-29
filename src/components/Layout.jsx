@@ -22,7 +22,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-pastel flex flex-col md:flex-row font-sans">
       <aside className="w-full md:w-64 bg-white border-r border-sage-100 flex flex-col justify-between fixed md:relative z-10 bottom-0 md:bottom-auto">
         <div className="p-6 hidden md:block">
-          <h2 className="text-2xl font-serif text-sage-900">R&I Planner</h2>
+          <h2 className="text-2xl font-serif text-sage-900">Rasyid & Irma Wedding Planner</h2>
           <p className="text-sm text-gray-400 mt-1">Welcome, {user}</p>
         </div>
         <nav className="flex md:flex-col p-2 md:p-4 gap-2 overflow-x-auto custom-scrollbar">
