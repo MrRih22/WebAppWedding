@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { WeddingContext } from '../context/WeddingContext';
-import { Plus, Trash2, Edit, ArrowUpDown, Filter, Search, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit, ArrowUpDown, Filter, Search, ExternalLink, Copy, Check } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const BASE_URL = "https://wedding-invitation-13.netlify.app/?to=";
@@ -14,6 +14,9 @@ export default function GuestList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [sortBy, setSortBy] = useState('default');
+
+  // State untuk indikator 'Copied' pada baris tertentu
+  const [copiedId, setCopiedId] = useState(null);
 
   // Otomatis isi customLink saat nama diketik
   const handleNamaChange = (e) => {
@@ -44,7 +47,6 @@ export default function GuestList() {
         alert("Gagal update tamu: " + error.message);
       }
     } else {
-      // Sertakan 'id' agar tidak terjadi error null value pada kolom id
       const newId = Date.now();
       const payload = {
         id: newId,
@@ -81,6 +83,14 @@ export default function GuestList() {
   const handleStatusChange = async (item, newStatus) => {
     const { error } = await supabase.from('guests').update({ status: newStatus }).eq('id', item.id);
     if (!error) setGuests(guests.map(g => g.id === item.id ? { ...g, status: newStatus } : g));
+  };
+
+  // Fungsi Salin Link Undangan
+  const handleCopyLink = (g) => {
+    const finalLink = g.customLink || `${BASE_URL}${encodeURIComponent(g.nama || '')}`;
+    navigator.clipboard.writeText(finalLink);
+    setCopiedId(g.id);
+    setTimeout(() => setCopiedId(null), 2000); // Reset ikon setelah 2 detik
   };
 
   // Logika Pencarian, Filter, & Urutkan data tamu
@@ -212,9 +222,19 @@ export default function GuestList() {
                     </select>
                   </td>
                   <td className="p-4">
-                    <div className="flex justify-center gap-3">
-                      <button onClick={() => handleEdit(g)} className="text-gray-400 hover:text-blue-500 transition-colors"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(g.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                    <div className="flex justify-center items-center gap-2">
+                      {/* Tombol Salin Link */}
+                      <button 
+                        onClick={() => handleCopyLink(g)} 
+                        title="Salin Link Undangan"
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors shadow-sm"
+                      >
+                        {copiedId === g.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                        {copiedId === g.id ? 'Disalin' : 'Salin'}
+                      </button>
+
+                      <button onClick={() => handleEdit(g)} title="Edit" className="text-gray-400 hover:text-blue-500 transition-colors p-1"><Edit size={18} /></button>
+                      <button onClick={() => handleDelete(g.id)} title="Hapus" className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
