@@ -9,21 +9,21 @@ const COLORS = ['#879A83', '#D4AF37', '#2C362A', '#E5C158', '#A3B19F', '#B5952F'
 
 export default function BudgetManager() {
   const { budgets = [], setBudgets } = useContext(WeddingContext) || {};
-  const [newItem, setNewItem] = useState({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
+  const [newItem, setNewItem] = useState({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhtempo: '', islunas: false });
   const [editId, setEditId] = useState(null); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Menggunakan key 'islunas' (huruf kecil semua) agar cocok dengan database
+    // Kirim data menggunakan huruf kecil semua agar cocok dengan kolom Supabase berapapun namanya
     const payload = {
       kategori: newItem.kategori,
       deskripsi: newItem.deskripsi,
       rencana: Number(newItem.rencana) || 0,
       aktual: Number(newItem.aktual) || 0,
       dibayar: Number(newItem.dibayar) || 0,
-      jatuhTempo: newItem.jatuhTempo,
-      islunas: Boolean(newItem.islunas)
+      jatuhtempo: newItem.jatuhtempo || newItem.jatuhTempo || '',
+      islunas: Boolean(newItem.islunas !== undefined ? newItem.islunas : newItem.isLunas)
     };
 
     if (editId) {
@@ -31,7 +31,7 @@ export default function BudgetManager() {
       if (!error) {
         setBudgets(budgets.map(b => b.id === editId ? { ...payload, id: editId } : b));
         setEditId(null);
-        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhtempo: '', islunas: false });
       } else {
         alert("Gagal update ke Supabase: " + error.message);
       }
@@ -42,7 +42,7 @@ export default function BudgetManager() {
       const { error } = await supabase.from('budgets').insert([dataToInsert]);
       if (!error) {
         setBudgets([...budgets, dataToInsert]);
-        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false });
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhtempo: '', islunas: false });
       } else {
         alert("Gagal insert ke Supabase: " + error.message);
       }
@@ -53,6 +53,7 @@ export default function BudgetManager() {
     setEditId(item.id); 
     setNewItem({
       ...item,
+      jatuhtempo: item.jatuhtempo || item.jatuhTempo || '',
       islunas: item.islunas !== undefined ? item.islunas : (item.isLunas || false)
     }); 
   };
@@ -98,11 +99,11 @@ export default function BudgetManager() {
             <input type="number" placeholder="Budget Rencana" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.rencana} onChange={e => setNewItem({...newItem, rencana: e.target.value})} />
             <input type="number" placeholder="Budget Aktual" className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.aktual} onChange={e => setNewItem({...newItem, aktual: e.target.value})} />
             <input type="number" placeholder="Telah Dibayar" className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.dibayar} onChange={e => setNewItem({...newItem, dibayar: e.target.value})} />
-            <input type="date" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.jatuhTempo} onChange={e => setNewItem({...newItem, jatuhTempo: e.target.value})} />
+            <input type="date" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.jatuhtempo || newItem.jatuhTempo || ''} onChange={e => setNewItem({...newItem, jatuhtempo: e.target.value})} />
             
             <div className="flex gap-2">
               <button type="submit" className="flex-1 bg-sage-500 text-white p-2.5 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan' : '+ Tambah'}</button>
-              {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', islunas: false })}} className="bg-gray-100 p-2.5 rounded-lg">Batal</button>}
+              {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhtempo: '', islunas: false })}} className="bg-gray-100 p-2.5 rounded-lg">Batal</button>}
             </div>
           </form>
         </div>
