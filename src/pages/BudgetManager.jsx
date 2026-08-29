@@ -14,21 +14,39 @@ export default function BudgetManager() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Pastikan tipe data angka dikonversi dengan benar agar tidak ditolak database
+    const payload = {
+      kategori: newItem.kategori,
+      deskripsi: newItem.deskripsi,
+      rencana: Number(newItem.rencana) || 0,
+      aktual: Number(newItem.aktual) || 0,
+      dibayar: Number(newItem.dibayar) || 0,
+      jatuhTempo: newItem.jatuhTempo,
+      isLunas: Boolean(newItem.isLunas)
+    };
+
     if (editId) {
-      const updatedData = { ...newItem, id: editId };
-      const { error } = await supabase.from('budgets').update(updatedData).eq('id', editId);
+      const { error } = await supabase.from('budgets').update(payload).eq('id', editId);
       if (!error) {
-        setBudgets(budgets.map(b => b.id === editId ? updatedData : b));
+        setBudgets(budgets.map(b => b.id === editId ? { ...payload, id: editId } : b));
         setEditId(null);
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
+      } else {
+        alert("Gagal update ke Supabase: " + error.message);
       }
     } else {
-      const dataToInsert = { ...newItem, id: Date.now() };
+      const newId = Date.now();
+      const dataToInsert = { ...payload, id: newId };
+      
       const { error } = await supabase.from('budgets').insert([dataToInsert]);
       if (!error) {
         setBudgets([...budgets, dataToInsert]);
+        setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
+      } else {
+        alert("Gagal insert ke Supabase: " + error.message);
       }
     }
-    setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false });
   };
 
   const handleEdit = (item) => { 
@@ -40,6 +58,8 @@ export default function BudgetManager() {
     const { error } = await supabase.from('budgets').delete().eq('id', id);
     if (!error) {
       setBudgets(budgets.filter(b => b.id !== id));
+    } else {
+      alert("Gagal menghapus: " + error.message);
     }
   };
 
@@ -48,6 +68,8 @@ export default function BudgetManager() {
     const { error } = await supabase.from('budgets').update({ isLunas: newStatus }).eq('id', item.id);
     if (!error) {
       setBudgets(budgets.map(b => b.id === item.id ? { ...b, isLunas: newStatus } : b));
+    } else {
+      alert("Gagal mengubah status lunas: " + error.message);
     }
   };
 
@@ -64,17 +86,17 @@ export default function BudgetManager() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50 lg:w-1/3">
           <h3 className="text-lg font-bold text-sage-900 mb-4">{editId ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}</h3>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <select className="w-full p-2 border rounded-lg text-sm" value={newItem.kategori} onChange={e => setNewItem({...newItem, kategori: e.target.value})}>
+            <select className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.kategori} onChange={e => setNewItem({...newItem, kategori: e.target.value})}>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
-            <input type="text" placeholder="Deskripsi" required className="w-full p-2 border rounded-lg text-sm" value={newItem.deskripsi} onChange={e => setNewItem({...newItem, deskripsi: e.target.value})} />
-            <input type="number" placeholder="Budget Rencana" required className="w-full p-2 border rounded-lg text-sm" value={newItem.rencana} onChange={e => setNewItem({...newItem, rencana: e.target.value})} />
-            <input type="number" placeholder="Budget Aktual" className="w-full p-2 border rounded-lg text-sm" value={newItem.aktual} onChange={e => setNewItem({...newItem, aktual: e.target.value})} />
-            <input type="number" placeholder="Telah Dibayar" className="w-full p-2 border rounded-lg text-sm" value={newItem.dibayar} onChange={e => setNewItem({...newItem, dibayar: e.target.value})} />
-            <input type="date" required className="w-full p-2 border rounded-lg text-sm" value={newItem.jatuhTempo} onChange={e => setNewItem({...newItem, jatuhTempo: e.target.value})} />
+            <input type="text" placeholder="Deskripsi" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.deskripsi} onChange={e => setNewItem({...newItem, deskripsi: e.target.value})} />
+            <input type="number" placeholder="Budget Rencana" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.rencana} onChange={e => setNewItem({...newItem, rencana: e.target.value})} />
+            <input type="number" placeholder="Budget Aktual" className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.aktual} onChange={e => setNewItem({...newItem, aktual: e.target.value})} />
+            <input type="number" placeholder="Telah Dibayar" className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.dibayar} onChange={e => setNewItem({...newItem, dibayar: e.target.value})} />
+            <input type="date" required className="w-full p-2 border rounded-lg text-sm outline-none" value={newItem.jatuhTempo} onChange={e => setNewItem({...newItem, jatuhTempo: e.target.value})} />
             
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-sage-500 text-white p-2.5 rounded-lg font-medium">{editId ? 'Simpan' : '+ Tambah'}</button>
+              <button type="submit" className="flex-1 bg-sage-500 text-white p-2.5 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan' : '+ Tambah'}</button>
               {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ kategori: CATEGORIES[0], deskripsi: '', rencana: '', aktual: '', dibayar: '', jatuhTempo: '', isLunas: false })}} className="bg-gray-100 p-2.5 rounded-lg">Batal</button>}
             </div>
           </form>
