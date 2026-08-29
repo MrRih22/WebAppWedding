@@ -77,7 +77,7 @@ export default function Dashboard() {
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9ECE8" />
             <XAxis dataKey="name" stroke="#879A83" />
-            <YAxis stroke="#879A83" tickFormatter={(value) => `Rp${value/1000000}M`} />
+            <YAxis stroke="#879A83" tickFormatter={(value) => `Rp${value/1000000}Jt`} />
             <Tooltip formatter={(value) => formatIDR(value)} />
             <Legend />
             <Bar dataKey="Target Dana" fill="#2C2A36" />
