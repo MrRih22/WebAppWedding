@@ -1,119 +1,253 @@
-import React, { useContext, useState } from 'react';
-import { WeddingContext } from '../context/WeddingContext';
-import { Plus, Trash2, Edit, ArrowUpDown, Filter, Search } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import React, { useContext, useState } from "react";
+import { WeddingContext } from "../context/WeddingContext";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  ArrowUpDown,
+  Filter,
+  Search,
+  ExternalLink,
+} from "lucide-react";
+import { supabase } from "../supabaseClient";
+
+const BASE_URL = "https://wedding-invitation-13.netlify.app/?to=";
 
 export default function GuestList() {
   const { guests = [], setGuests } = useContext(WeddingContext) || {};
-  const [newItem, setNewItem] = useState({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' });
+  const [newItem, setNewItem] = useState({
+    nama: "",
+    pihak: "Azzam",
+    hubungan: "Keluarga",
+    alamat: "",
+    status: "Belum Dikirim",
+    link: "",
+  });
   const [editId, setEditId] = useState(null);
 
   // State untuk Search, Filter, & Urutkan
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('Semua');
-  const [sortBy, setSortBy] = useState('default');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [sortBy, setSortBy] = useState("default");
+
+  // Fungsi otomatis generate link saat nama tamu diketik
+  const handleNamaChange = (e) => {
+    const namaTamu = e.target.value;
+    setNewItem((prev) => ({
+      ...prev,
+      nama: namaTamu,
+      link: namaTamu.trim()
+        ? `${BASE_URL}${encodeURIComponent(namaTamu.trim())}`
+        : "",
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (editId) {
       const updated = { ...newItem, id: editId };
-      const { error } = await supabase.from('guests').update(updated).eq('id', editId);
+      const { error } = await supabase
+        .from("guests")
+        .update(updated)
+        .eq("id", editId);
       if (!error) {
-        setGuests(guests.map(g => g.id === editId ? updated : g));
+        setGuests(guests.map((g) => (g.id === editId ? updated : g)));
         setEditId(null);
       } else {
         alert("Gagal update tamu: " + error.message);
       }
     } else {
       const dataToInsert = { ...newItem, id: Date.now() };
-      const { error } = await supabase.from('guests').insert([dataToInsert]);
+      const { error } = await supabase.from("guests").insert([dataToInsert]);
       if (!error) {
         setGuests([...guests, dataToInsert]);
       } else {
         alert("Gagal menambah tamu: " + error.message);
       }
     }
-    setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' });
+    setNewItem({
+      nama: "",
+      pihak: "Azzam",
+      hubungan: "Keluarga",
+      alamat: "",
+      status: "Belum Dikirim",
+      link: "",
+    });
   };
 
-  const handleEdit = (item) => { setEditId(item.id); setNewItem({ ...item }); };
-  
+  const handleEdit = (item) => {
+    setEditId(item.id);
+    setNewItem({
+      ...item,
+      link:
+        item.link ||
+        (item.nama ? `${BASE_URL}${encodeURIComponent(item.nama)}` : ""),
+    });
+  };
+
   const handleDelete = async (id) => {
-    const { error } = await supabase.from('guests').delete().eq('id', id);
-    if (!error) setGuests(guests.filter(g => g.id !== id));
+    const { error } = await supabase.from("guests").delete().eq("id", id);
+    if (!error) setGuests(guests.filter((g) => g.id !== id));
   };
 
   const handleStatusChange = async (item, newStatus) => {
-    const { error } = await supabase.from('guests').update({ status: newStatus }).eq('id', item.id);
-    if (!error) setGuests(guests.map(g => g.id === item.id ? { ...g, status: newStatus } : g));
+    const { error } = await supabase
+      .from("guests")
+      .update({ status: newStatus })
+      .eq("id", item.id);
+    if (!error)
+      setGuests(
+        guests.map((g) => (g.id === item.id ? { ...g, status: newStatus } : g)),
+      );
   };
 
   // Logika Pencarian, Filter, & Urutkan data tamu
-  const filteredGuests = guests.filter(g => {
-    const matchesSearch = 
-      g.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.hubungan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.pihak.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredGuests = guests
+    .filter((g) => {
+      const matchesSearch =
+        g.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.hubungan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.pihak.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (g.link && g.link.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesFilter = filterStatus === 'Semua' || g.status === filterStatus;
+      const matchesFilter =
+        filterStatus === "Semua" || g.status === filterStatus;
 
-    return matchesSearch && matchesFilter;
-  }).sort((a, b) => {
-    if (sortBy === 'namaAsc') return a.nama.localeCompare(b.nama);
-    if (sortBy === 'namaDesc') return b.nama.localeCompare(a.nama);
-    if (sortBy === 'pihakAsc') return a.pihak.localeCompare(b.pihak);
-    return 0; // Default (Waktu input)
-  });
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      if (sortBy === "namaAsc") return a.nama.localeCompare(b.nama);
+      if (sortBy === "namaDesc") return b.nama.localeCompare(a.nama);
+      if (sortBy === "pihakAsc") return a.pihak.localeCompare(b.pihak);
+      return 0;
+    });
 
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50">
-        <h3 className="text-lg font-bold text-sage-900 mb-4">{editId ? 'Edit Tamu' : 'Tambah Tamu Undangan'}</h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <input type="text" placeholder="Nama Tamu" required className="p-3 border rounded-lg text-sm md:col-span-2 outline-none focus:ring-2 focus:ring-sage-500" value={newItem.nama} onChange={e => setNewItem({...newItem, nama: e.target.value})} />
-          <select className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.pihak} onChange={e => setNewItem({...newItem, pihak: e.target.value})}><option>Azzam</option><option>Irma</option><option>Bersama</option></select>
-          <input type="text" placeholder="Hubungan (Contoh: Teman Kerja)" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.hubungan} onChange={e => setNewItem({...newItem, hubungan: e.target.value})} />
-          <input type="text" placeholder="Alamat / Kota" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.alamat} onChange={e => setNewItem({...newItem, alamat: e.target.value})} />
-          
-          <div className="flex gap-2 md:col-span-5">
-            <button type="submit" className="flex-1 bg-sage-500 text-white p-3 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan Perubahan' : '+ Tambah Tamu'}</button>
-            {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ nama: '', pihak: 'Azzam', hubungan: 'Keluarga', alamat: '', status: 'Belum Dikirim' })}} className="bg-gray-100 px-6 rounded-lg font-medium">Batal</button>}
+        <h3 className="text-lg font-bold text-sage-900 mb-4">
+          {editId ? "Edit Tamu" : "Tambah Tamu Undangan"}
+        </h3>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+        >
+          <input
+            type="text"
+            placeholder="Nama Tamu (Link otomatis ter-generate)"
+            required
+            className="p-3 border rounded-lg text-sm lg:col-span-2 outline-none focus:ring-2 focus:ring-sage-500"
+            value={newItem.nama}
+            onChange={handleNamaChange}
+          />
+          <select
+            className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500"
+            value={newItem.pihak}
+            onChange={(e) => setNewItem({ ...newItem, pihak: e.target.value })}
+          >
+            <option>Azzam</option>
+            <option>Irma</option>
+            <option>Bersama</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Hubungan (Cth: Teman Kerja)"
+            required
+            className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500"
+            value={newItem.hubungan}
+            onChange={(e) =>
+              setNewItem({ ...newItem, hubungan: e.target.value })
+            }
+          />
+          <input
+            type="text"
+            placeholder="Alamat / Kota"
+            required
+            className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500"
+            value={newItem.alamat}
+            onChange={(e) => setNewItem({ ...newItem, alamat: e.target.value })}
+          />
+
+          <div className="lg:col-span-5 flex flex-col gap-1">
+            <label className="text-xs font-semibold text-gray-500">
+              Link Undangan Digital (Otomatis dari nama tamu, bisa disesuaikan
+              jika perlu):
+            </label>
+            <input
+              type="url"
+              placeholder="https://wedding-invitation-13.netlify.app/?to=NamaTamu"
+              className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-mono text-xs"
+              value={newItem.link}
+              onChange={(e) => setNewItem({ ...newItem, link: e.target.value })}
+            />
+          </div>
+
+          <div className="flex gap-2 lg:col-span-5">
+            <button
+              type="submit"
+              className="flex-1 bg-sage-500 text-white p-3 rounded-lg font-medium hover:bg-sage-900 transition-colors"
+            >
+              {editId ? "Simpan Perubahan" : "+ Tambah Tamu"}
+            </button>
+            {editId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditId(null);
+                  setNewItem({
+                    nama: "",
+                    pihak: "Azzam",
+                    hubungan: "Keluarga",
+                    alamat: "",
+                    status: "Belum Dikirim",
+                    link: "",
+                  });
+                }}
+                className="bg-gray-100 px-6 rounded-lg font-medium"
+              >
+                Batal
+              </button>
+            )}
           </div>
         </form>
       </div>
 
-      {/* Bagian Search, Filter & Urutkan Tamu */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-sage-50 flex flex-col lg:flex-row justify-between items-center gap-4">
-        {/* Kolom Search Manual */}
         <div className="relative w-full lg:w-1/3">
           <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Cari nama, alamat, hubungan..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
+          <input
+            type="text"
+            placeholder="Cari nama, alamat, hubungan, link..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium"
           />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-          {/* Filter Status */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Filter size={18} className="text-sage-700" />
             <span className="text-sm font-bold text-sage-900">Status:</span>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial"
+            >
               <option value="Semua">Semua Status</option>
               <option value="Belum Dikirim">Belum Dikirim</option>
               <option value="Sudah Dikirim">Sudah Dikirim</option>
             </select>
           </div>
 
-          {/* Urutkan */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <ArrowUpDown size={18} className="text-sage-700" />
             <span className="text-sm font-bold text-sage-900">Urutkan:</span>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial"
+            >
               <option value="default">Default</option>
               <option value="namaAsc">Nama (A - Z)</option>
               <option value="namaDesc">Nama (Z - A)</option>
@@ -131,22 +265,39 @@ export default function GuestList() {
               <th className="p-4">Pihak</th>
               <th className="p-4">Hubungan</th>
               <th className="p-4">Alamat</th>
+              <th className="p-4">Link Undangan</th>
               <th className="p-4">Status Undangan</th>
               <th className="p-4 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredGuests?.map(g => (
+            {filteredGuests?.map((g) => (
               <tr key={g.id} className="hover:bg-gray-50">
                 <td className="p-4 font-medium text-sage-900">{g.nama}</td>
-                <td className="p-4 font-semibold text-xs text-sage-600">{g.pihak}</td>
+                <td className="p-4 font-semibold text-xs text-sage-600">
+                  {g.pihak}
+                </td>
                 <td className="p-4">{g.hubungan}</td>
                 <td className="p-4 text-gray-500">{g.alamat}</td>
                 <td className="p-4">
-                  <select 
-                    value={g.status} 
-                    onChange={(e) => handleStatusChange(g, e.target.value)} 
-                    className={`p-2 rounded-lg text-xs font-semibold outline-none cursor-pointer ${g.status === 'Sudah Dikirim' ? 'bg-sage-100 text-sage-900' : 'bg-amber-50 text-amber-600'}`}
+                  {g.link ? (
+                    <a
+                      href={g.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-1 text-xs font-medium"
+                    >
+                      <ExternalLink size={14} /> Buka Link
+                    </a>
+                  ) : (
+                    <span className="text-gray-300 text-xs">-</span>
+                  )}
+                </td>
+                <td className="p-4">
+                  <select
+                    value={g.status}
+                    onChange={(e) => handleStatusChange(g, e.target.value)}
+                    className={`p-2 rounded-lg text-xs font-semibold outline-none cursor-pointer ${g.status === "Sudah Dikirim" ? "bg-sage-100 text-sage-900" : "bg-amber-50 text-amber-600"}`}
                   >
                     <option value="Belum Dikirim">Belum Dikirim</option>
                     <option value="Sudah Dikirim">Sudah Dikirim</option>
@@ -154,14 +305,28 @@ export default function GuestList() {
                 </td>
                 <td className="p-4">
                   <div className="flex justify-center gap-3">
-                    <button onClick={() => handleEdit(g)} className="text-gray-400 hover:text-blue-500 transition-colors"><Edit size={18} /></button>
-                    <button onClick={() => handleDelete(g.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                    <button
+                      onClick={() => handleEdit(g)}
+                      className="text-gray-400 hover:text-blue-500 transition-colors"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(g.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
             {(!filteredGuests || filteredGuests.length === 0) && (
-              <tr><td colSpan="6" className="p-8 text-center text-gray-400">Tidak ada daftar tamu yang sesuai dengan pencarian.</td></tr>
+              <tr>
+                <td colSpan="7" className="p-8 text-center text-gray-400">
+                  Tidak ada daftar tamu yang sesuai dengan pencarian.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
