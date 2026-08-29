@@ -68,15 +68,26 @@ export const WeddingProvider = ({ children }) => {
       if (maharData) setMahar(maharData);
       if (contactData) setContacts(contactData);
       if (savingData) setSavings(savingData);
-      if (configData) setRencanaDana(configData.rencanaDana);
+      // Mengambil data dari kolom rencanadana (huruf kecil)
+      if (configData) setRencanaDana(configData.rencanadana || 0);
     } catch (error) {
       console.error("Gagal sinkronisasi data dari Supabase:", error);
     }
   };
 
   const updateRencanaDana = async (newVal) => {
-    setRencanaDana(newVal);
-    await supabase.from('config').update({ rencanaDana: Number(newVal) }).eq('id', 1);
+    const numericVal = Number(newVal) || 0;
+    setRencanaDana(numericVal);
+    
+    // Menyimpan ke kolom rencanadana di Supabase
+    const { error } = await supabase
+      .from('config')
+      .update({ rencanadana: numericVal })
+      .eq('id', 1);
+
+    if (error) {
+      console.error("Gagal menyimpan Target Dana ke Supabase:", error.message);
+    }
   };
 
   const login = (username, password) => {
