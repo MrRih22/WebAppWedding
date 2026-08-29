@@ -15,7 +15,7 @@ export default function Login() {
     if (login(username, password)) {
       navigate('/');
     } else {
-      setError('Kredensial tidak valid. Akses ditolak.');
+      setError('Ettt Salahh Password Nya Coyy !!!');
     }
   };
 
