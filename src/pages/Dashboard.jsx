@@ -1,62 +1,139 @@
-import React, { useContext } from 'react';
-import { WeddingContext } from '../context/WeddingContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { createContext, useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
-export default function Dashboard() {
-  const { budgets = [], rencanaDana = 0, setRencanaDana, danaTerkumpul = 0 } = useContext(WeddingContext) || {};
+export const WeddingContext = createContext();
 
-  const totalActual = budgets.reduce((acc, curr) => acc + Number(curr.aktual || 0), 0);
-  const totalDibayar = budgets.reduce((acc, curr) => acc + Number(curr.dibayar || 0), 0);
+export const WeddingProvider = ({ children }) => {
+  const checkSession = () => {
+    localStorage.removeItem('wedding_user'); 
+    const sessionData = JSON.parse(localStorage.getItem('wedding_session'));
+    if (sessionData && new Date().getTime() < sessionData.expiry) return sessionData.username;
+    localStorage.removeItem('wedding_session');
+    return null;
+  };
+
+  const [user, setUser] = useState(checkSession());
   
-  const sisaUangTerkumpul = Number(danaTerkumpul) - totalDibayar;
-  const kurangDana = Number(rencanaDana) > Number(danaTerkumpul) ? Number(rencanaDana) - Number(danaTerkumpul) : 0;
+  const [budgets, setBudgets] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [guests, setGuests] = useState([]);
+  const [seserahan, setSeserahan] = useState([]);
+  const [mahar, setMahar] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [rencanaDana, setRencanaDana] = useState(0);
+  const [savings, setSavings] = useState([]);
 
-  const chartData = [
-    { name: 'Status Finansial', 'Target Dana': Number(rencanaDana), 'Terkumpul': Number(danaTerkumpul), 'Kebutuhan': totalActual, 'Dibayar': totalDibayar }
-  ];
+  useEffect(() => {
+    if (user) {
+      fetchAllData();
 
-  const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
+      const channel = supabase.channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          fetchAllData();
+        })
+        .subscribe();
 
-  const MetricCard = ({ title, value, color, subtitle, isWarning }) => (
-    <div className={`bg-white p-5 rounded-2xl shadow-sm border ${isWarning ? 'border-red-100 bg-red-50' : 'border-sage-50'} flex flex-col justify-between`}>
-      <div><p className="text-sm text-gray-500 mb-1">{title}</p><h4 className={`text-xl font-bold ${color}`}>{formatIDR(value)}</h4></div>
-      {subtitle && <p className="text-xs text-gray-400 mt-2 font-medium">{subtitle}</p>}
-    </div>
-  );
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
+
+  const fetchAllData = async () => {
+    try {
+      const [
+        { data: budgetData },
+        { data: taskData },
+        { data: guestData },
+        { data: seserahanData },
+        { data: maharData },
+        { data: contactData },
+        { data: savingData },
+        { data: configData }
+      ] = await Promise.all([
+        supabase.from('budgets').select('*'),
+        supabase.from('tasks').select('*'),
+        supabase.from('guests').select('*'),
+        supabase.from('seserahan').select('*'),
+        supabase.from('mahar').select('*'),
+        supabase.from('contacts').select('*'),
+        supabase.from('savings').select('*'),
+        supabase.from('config').select('*').eq('id', 1).single()
+      ]);
+
+      if (budgetData) setBudgets(budgetData);
+      if (taskData) setTasks(taskData);
+      if (guestData) setGuests(guestData);
+      if (seserahanData) setSeserahan(seserahanData);
+      if (maharData) setMahar(maharData);
+      if (contactData) setContacts(contactData);
+      if (savingData) setSavings(savingData);
+      if (configData) setRencanaDana(configData.rencanaDana || 0);
+    } catch (error) {
+      console.error("Gagal sinkronisasi data dari Supabase:", error);
+    }
+  };
+
+  // Fungsi update target dana yang langsung dieksekusi ke Supabase
+  const updateRencanaDana = async (newVal) => {
+    const numericVal = Number(newVal) || 0;
+    setRencanaDana(numericVal);
+    
+    const { error } = await supabase
+      .from('config')
+      .update({ rencanaDana: numericVal })
+      .eq('id', 1);
+
+    if (error) {
+      console.error("Gagal menyimpan Target Dana ke Supabase:", error.message);
+    }
+  };
+
+  const login = (username, password) => {
+    if ((username === 'Azzam' || username === 'Irma') && password === '060626') {
+      const expiryTime = new Date().getTime() + (24 * 60 * 60 * 1000); 
+      localStorage.setItem('wedding_session', JSON.stringify({ username, expiry: expiryTime }));
+      setUser(username);
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('wedding_session');
+    setUser(null);
+  };
+
+  const totalTabungan = savings?.reduce((acc, curr) => acc + Number(curr.jumlah || 0), 0) || 0;
+  const totalDibayar = budgets?.reduce((acc, curr) => acc + Number(curr.dibayar || 0), 0) || 0;
+  const danaTerkumpul = totalTabungan + totalDibayar;
+
+  const calculateProgress = () => {
+    let totalPercentage = 0; let activeParams = 0;
+    if (tasks.length > 0) { totalPercentage += (tasks.filter(t => t.status === 'Selesai').length / tasks.length) * 100; activeParams++; }
+    if (budgets.length > 0) { totalPercentage += (budgets.filter(b => b.isLunas).length / budgets.length) * 100; activeParams++; }
+    if (guests.length > 0) { totalPercentage += (guests.filter(g => g.status === 'Sudah Dikirim').length / guests.length) * 100; activeParams++; }
+    if (seserahan.length > 0) { totalPercentage += (seserahan.filter(s => s.status === 'Sudah').length / seserahan.length) * 100; activeParams++; }
+    if (mahar.length > 0) { totalPercentage += (mahar.filter(m => m.status === 'Sudah').length / mahar.length) * 100; activeParams++; }
+    if (Number(rencanaDana) > 0) { totalPercentage += (Math.min(danaTerkumpul / Number(rencanaDana), 1)) * 100; activeParams++; }
+    return activeParams === 0 ? 0 : Math.round(totalPercentage / activeParams);
+  };
 
   return (
-    <div>
-      <h2 className="text-2xl font-serif text-sage-900 mb-6">Ringkasan Eksekutif</h2>
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50 mb-8 bg-gradient-to-r from-sage-50 to-white">
-        <label className="block text-sm font-bold text-sage-900 mb-2">Target Rencana Dana</label>
-        <div className="relative md:w-1/2">
-          <span className="absolute left-4 top-3 text-gray-500 font-medium">Rp</span>
-          <input type="number" value={rencanaDana} onChange={(e) => setRencanaDana && setRencanaDana(e.target.value)} className="w-full pl-12 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sage-500 outline-none font-medium" placeholder="0" />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <MetricCard title="Target Rencana" value={rencanaDana} color="text-sage-900" />
-        <MetricCard title="Dana Terkumpul" value={danaTerkumpul} color="text-gold-500" subtitle="Tabungan + Telah Dibayar" />
-        <MetricCard title="Kurang Dana" value={kurangDana} color="text-red-500" subtitle="Target dikurangi Terkumpul" isWarning={kurangDana > 0} />
-        <MetricCard title="Kebutuhan Aktual" value={totalActual} color="text-gray-700" subtitle="Total budget aktual" />
-        <MetricCard title="Sisa Dana Tersedia" value={sisaUangTerkumpul} color={sisaUangTerkumpul < 0 ? "text-red-500" : "text-sage-500"} subtitle="Terkumpul - Telah Dibayar" />
-      </div>
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50 h-[400px]">
-        <h3 className="text-lg font-bold text-sage-900 mb-6">Grafik Finansial</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9ECE8" />
-            <XAxis dataKey="name" stroke="#879A83" />
-            <YAxis stroke="#879A83" tickFormatter={(value) => `Rp${value/1000000}M`} />
-            <Tooltip formatter={(value) => formatIDR(value)} />
-            <Legend />
-            <Bar dataKey="Target Dana" fill="#2C362A" />
-            <Bar dataKey="Terkumpul" fill="#D4AF37" />
-            <Bar dataKey="Kebutuhan" fill="#E9ECE8" />
-            <Bar dataKey="Dibayar" fill="#879A83" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <WeddingContext.Provider value={{
+      user, login, logout, 
+      budgets, setBudgets, 
+      tasks, setTasks,
+      guests, setGuests, 
+      seserahan, setSeserahan, 
+      mahar, setMahar, 
+      contacts, setContacts,
+      rencanaDana, setRencanaDana: updateRencanaDana, 
+      savings, setSavings, 
+      danaTerkumpul, 
+      overallProgress: calculateProgress()
+    }}>
+      {children}
+    </WeddingContext.Provider>
   );
-}
+};
