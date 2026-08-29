@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { Plus, Trash2, Edit } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
-const CATEGORIES = ["Mahar ( Uang + Emas )", "Biaya Gedung", "Undangan", "Souvenir", "Katering", "Penginapan", "Paket Wedding Lengkap", "Transportasi", "Mc + Entertaint", "Pengeluaran Lainnya"];
+const CATEGORIES = ["Mahar ( Uang + Emas )", "Seserahan" ,"Biaya Gedung", "Undangan", "Souvenir", "Katering", "Penginapan", "Paket Wedding Lengkap", "Transportasi", "Mc + Entertaint", "Pengeluaran Lainnya"];
 const COLORS = ['#879A83', '#D4AF37', '#2C362A', '#E5C158', '#A3B19F', '#B5952F', '#F4A261', '#E76F51', '#264653', '#1D3557'];
 
 export default function BudgetManager() {
