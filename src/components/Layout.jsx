@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { WeddingContext } from '../context/WeddingContext';
-import { LayoutDashboard, Wallet, CheckSquare, Users, Gift, Gem, Phone, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, CheckSquare, Users, Gift, Gem, Phone, PiggyBank, LogOut } from 'lucide-react';
 
 export default function Layout({ children }) {
   const { user, logout, overallProgress } = useContext(WeddingContext);
@@ -15,13 +15,14 @@ export default function Layout({ children }) {
     { name: 'Seserahan', path: '/seserahan', icon: <Gift size={20} /> },
     { name: 'Mahar', path: '/mahar', icon: <Gem size={20} /> },
     { name: 'Kontak', path: '/contacts', icon: <Phone size={20} /> },
+    { name: 'Nabung', path: '/nabung', icon: <PiggyBank size={20} /> },
   ];
 
   return (
     <div className="min-h-screen bg-pastel flex flex-col md:flex-row font-sans">
       <aside className="w-full md:w-64 bg-white border-r border-sage-100 flex flex-col justify-between fixed md:relative z-10 bottom-0 md:bottom-auto">
         <div className="p-6 hidden md:block">
-          <h2 className="text-2xl font-serif text-sage-900">Azzam & Imaa Wedding Planner</h2>
+          <h2 className="text-2xl font-serif text-sage-900">R&I Planner</h2>
           <p className="text-sm text-gray-400 mt-1">Welcome, {user}</p>
         </div>
         <nav className="flex md:flex-col p-2 md:p-4 gap-2 overflow-x-auto custom-scrollbar">

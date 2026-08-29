@@ -4,14 +4,14 @@ import { Plus, Trash2, ExternalLink } from 'lucide-react';
 
 export default function Seserahan() {
   const { seserahan, setSeserahan } = useContext(WeddingContext);
-  const [newItem, setNewItem] = useState({ item: '', status: 'Belum', harga: '', link: '', keterangan: '', qtyRencana: 1, qtyAktual: 0 });
+  const [newItem, setNewItem] = useState({ item: '', status: 'Belum', harga: '', link: '', keterangan: '', qty: 1 });
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(num);
 
   const handleAdd = (e) => {
     e.preventDefault();
     setSeserahan([...seserahan, { ...newItem, id: Date.now() }]);
-    setNewItem({ item: '', status: 'Belum', harga: '', link: '', keterangan: '', qtyRencana: 1, qtyAktual: 0 });
+    setNewItem({ item: '', status: 'Belum', harga: '', link: '', keterangan: '', qty: 1 });
   };
 
   return (
@@ -21,10 +21,9 @@ export default function Seserahan() {
         <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input type="text" placeholder="Nama Item" required className="p-3 border rounded-lg text-sm md:col-span-2" value={newItem.item} onChange={e => setNewItem({...newItem, item: e.target.value})} />
           <input type="number" placeholder="Harga Satuan" required className="p-3 border rounded-lg text-sm" value={newItem.harga} onChange={e => setNewItem({...newItem, harga: e.target.value})} />
+          <input type="number" placeholder="Qty" required min="1" className="p-3 border rounded-lg text-sm" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: e.target.value})} />
           <input type="url" placeholder="Link Barang (Opsional)" className="p-3 border rounded-lg text-sm" value={newItem.link} onChange={e => setNewItem({...newItem, link: e.target.value})} />
-          <input type="number" placeholder="Qty Rencana" required className="p-3 border rounded-lg text-sm" value={newItem.qtyRencana} onChange={e => setNewItem({...newItem, qtyRencana: e.target.value})} />
-          <input type="number" placeholder="Qty Aktual" className="p-3 border rounded-lg text-sm" value={newItem.qtyAktual} onChange={e => setNewItem({...newItem, qtyAktual: e.target.value})} />
-          <input type="text" placeholder="Keterangan" className="p-3 border rounded-lg text-sm" value={newItem.keterangan} onChange={e => setNewItem({...newItem, keterangan: e.target.value})} />
+          <input type="text" placeholder="Keterangan" className="p-3 border rounded-lg text-sm md:col-span-2" value={newItem.keterangan} onChange={e => setNewItem({...newItem, keterangan: e.target.value})} />
           <button type="submit" className="bg-sage-500 text-white p-3 rounded-lg hover:bg-sage-900 transition-colors flex items-center justify-center gap-2">
             <Plus size={18} /> Tambah
           </button>
@@ -37,36 +36,42 @@ export default function Seserahan() {
             <tr>
               <th className="p-4">No</th>
               <th className="p-4">Item</th>
-              <th className="p-4">Harga</th>
+              <th className="p-4">Harga Satuan</th>
+              <th className="p-4 text-center">Qty</th>
+              <th className="p-4">Total Harga</th>
               <th className="p-4">Link</th>
-              <th className="p-4">Qty (Rencana / Aktual)</th>
               <th className="p-4">Keterangan</th>
               <th className="p-4">Status</th>
               <th className="p-4">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {seserahan.map((s, index) => (
-              <tr key={s.id} className="hover:bg-gray-50">
-                <td className="p-4">{index + 1}</td>
-                <td className="p-4 font-medium">{s.item}</td>
-                <td className="p-4 text-gold-600">{formatIDR(s.harga)}</td>
-                <td className="p-4">{s.link && <a href={s.link} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1"><ExternalLink size={14}/> Beli</a>}</td>
-                <td className="p-4 text-center font-bold">{s.qtyRencana} / {s.qtyAktual}</td>
-                <td className="p-4">{s.keterangan}</td>
-                <td className="p-4">
-                  <select value={s.status} onChange={(e) => setSeserahan(seserahan.map(item => item.id === s.id ? { ...item, status: e.target.value } : item))}
-                    className={`p-2 rounded-lg text-xs font-semibold ${s.status === 'Sudah' ? 'bg-sage-100 text-sage-900' : 'bg-red-50 text-red-600'}`}>
-                    <option value="Belum">Belum</option>
-                    <option value="Sudah">Sudah</option>
-                  </select>
-                </td>
-                <td className="p-4"><button onClick={() => setSeserahan(seserahan.filter(item => item.id !== s.id))} className="text-gray-400 hover:text-red-500"><Trash2 size={18} /></button></td>
-              </tr>
-            ))}
+            {seserahan.map((s, index) => {
+              const totalHarga = Number(s.harga) * Number(s.qty);
+              return (
+                <tr key={s.id} className="hover:bg-gray-50">
+                  <td className="p-4">{index + 1}</td>
+                  <td className="p-4 font-medium">{s.item}</td>
+                  <td className="p-4 text-gray-500">{formatIDR(s.harga)}</td>
+                  <td className="p-4 text-center font-bold bg-sage-50/50">{s.qty}</td>
+                  <td className="p-4 text-gold-600 font-bold">{formatIDR(totalHarga)}</td>
+                  <td className="p-4">{s.link && <a href={s.link} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1"><ExternalLink size={14}/> Beli</a>}</td>
+                  <td className="p-4">{s.keterangan}</td>
+                  <td className="p-4">
+                    <select value={s.status} onChange={(e) => setSeserahan(seserahan.map(item => item.id === s.id ? { ...item, status: e.target.value } : item))}
+                      className={`p-2 rounded-lg text-xs font-semibold outline-none ${s.status === 'Sudah' ? 'bg-sage-100 text-sage-900' : 'bg-red-50 text-red-600'}`}>
+                      <option value="Belum">Belum</option>
+                      <option value="Sudah">Sudah</option>
+                    </select>
+                  </td>
+                  <td className="p-4"><button onClick={() => setSeserahan(seserahan.filter(item => item.id !== s.id))} className="text-gray-400 hover:text-red-500"><Trash2 size={18} /></button></td>
+                </tr>
+              );
+            })}
+            {seserahan.length === 0 && <tr><td colSpan="9" className="p-8 text-center text-gray-400">Belum ada daftar seserahan.</td></tr>}
           </tbody>
         </table>
       </div>
     </div>
   );
-} 
+}

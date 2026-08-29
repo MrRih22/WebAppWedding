@@ -10,6 +10,7 @@ import GuestList from './pages/GuestList';
 import Seserahan from './pages/Seserahan';
 import Mahar from './pages/Mahar';
 import ContactInfo from './pages/ContactInfo';
+import Nabung from './pages/Nabung';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(WeddingContext);
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/seserahan" element={<ProtectedRoute><Seserahan /></ProtectedRoute>} />
           <Route path="/mahar" element={<ProtectedRoute><Mahar /></ProtectedRoute>} />
           <Route path="/contacts" element={<ProtectedRoute><ContactInfo /></ProtectedRoute>} />
+          <Route path="/nabung" element={<ProtectedRoute><Nabung /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
