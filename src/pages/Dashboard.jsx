@@ -82,7 +82,7 @@ export default function Dashboard() {
             <Legend />
             <Bar dataKey="Target Dana" fill="#2C2A36" />
             <Bar dataKey="Terkumpul" fill="#0045C5" />
-            <Bar dataKey="Kebutuhan" fill="#FFE600" />
+            <Bar dataKey="Kebutuhan" fill="#FF0000" />
             <Bar dataKey="Dibayar" fill="#2BFF00" />
           </BarChart>
         </ResponsiveContainer>
