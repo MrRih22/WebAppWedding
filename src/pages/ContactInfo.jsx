@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 
 export default function ContactInfo() {
   const { contacts = [], setContacts } = useContext(WeddingContext) || {};
-  const [newItem, setNewItem] = useState({ nama: '', role: '', noHp: '', notes: '' });
+  const [newItem, setNewItem] = useState({ nama: '', role: '', nohp: '', notes: '' });
   const [editId, setEditId] = useState(null);
 
   // State untuk Search dan Filter Role
@@ -14,8 +14,17 @@ export default function ContactInfo() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Menggunakan key 'nohp' (huruf kecil semua) agar klop dengan database Supabase
+    const payload = {
+      nama: newItem.nama,
+      role: newItem.role,
+      nohp: newItem.nohp || newItem.noHp || '',
+      notes: newItem.notes || ''
+    };
+
     if (editId) {
-      const updated = { ...newItem, id: editId };
+      const updated = { ...payload, id: editId };
       const { error } = await supabase.from('contacts').update(updated).eq('id', editId);
       if (!error) {
         setContacts(contacts.map(c => c.id === editId ? updated : c));
@@ -24,7 +33,7 @@ export default function ContactInfo() {
         alert("Gagal update kontak: " + error.message);
       }
     } else {
-      const dataToInsert = { ...newItem, id: Date.now() };
+      const dataToInsert = { ...payload, id: Date.now() };
       const { error } = await supabase.from('contacts').insert([dataToInsert]);
       if (!error) {
         setContacts([...contacts, dataToInsert]);
@@ -32,10 +41,16 @@ export default function ContactInfo() {
         alert("Gagal menambah kontak: " + error.message);
       }
     }
-    setNewItem({ nama: '', role: '', noHp: '', notes: '' });
+    setNewItem({ nama: '', role: '', nohp: '', notes: '' });
   };
 
-  const handleEdit = (item) => { setEditId(item.id); setNewItem({ ...item }); };
+  const handleEdit = (item) => { 
+    setEditId(item.id); 
+    setNewItem({ 
+      ...item, 
+      nohp: item.nohp || item.noHp || '' 
+    }); 
+  };
   
   const handleDelete = async (id) => {
     const { error } = await supabase.from('contacts').delete().eq('id', id);
@@ -47,10 +62,11 @@ export default function ContactInfo() {
 
   // Logika Pencarian & Filter Kontak
   const filteredContacts = contacts.filter(c => {
+    const phoneNum = c.nohp || c.noHp || '';
     const matchesSearch = 
       c.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.noHp.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      phoneNum.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.notes && c.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesRole = selectedRole === 'Semua' || c.role === selectedRole;
@@ -65,12 +81,12 @@ export default function ContactInfo() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input type="text" placeholder="Nama" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.nama} onChange={e => setNewItem({...newItem, nama: e.target.value})} />
           <input type="text" placeholder="Role (Cth: WO / MUA / Keluarga)" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.role} onChange={e => setNewItem({...newItem, role: e.target.value})} />
-          <input type="text" placeholder="Nomor WhatsApp" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.noHp} onChange={e => setNewItem({...newItem, noHp: e.target.value})} />
+          <input type="text" placeholder="Nomor WhatsApp" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.nohp} onChange={e => setNewItem({...newItem, nohp: e.target.value})} />
           <input type="text" placeholder="Catatan" className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.notes} onChange={e => setNewItem({...newItem, notes: e.target.value})} />
           
           <div className="flex gap-2 md:col-span-4">
             <button type="submit" className="flex-1 bg-sage-500 text-white p-3 rounded-lg font-medium hover:bg-sage-900 transition-colors">{editId ? 'Simpan' : '+ Tambah Kontak'}</button>
-            {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ nama: '', role: '', noHp: '', notes: '' })}} className="bg-gray-100 px-6 rounded-lg font-medium">Batal</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null); setNewItem({ nama: '', role: '', nohp: '', notes: '' })}} className="bg-gray-100 px-6 rounded-lg font-medium">Batal</button>}
           </div>
         </form>
       </div>
@@ -106,23 +122,26 @@ export default function ContactInfo() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredContacts?.map(c => (
-          <div key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-sage-50 flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div>
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-sage-900 text-lg">{c.nama}</h4>
-                <span className="bg-sage-50 text-sage-700 text-xs px-2.5 py-1 rounded-md font-semibold">{c.role}</span>
+        {filteredContacts?.map(c => {
+          const phoneNumber = c.nohp || c.noHp || '';
+          return (
+            <div key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-sage-50 flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div>
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-bold text-sage-900 text-lg">{c.nama}</h4>
+                  <span className="bg-sage-50 text-sage-700 text-xs px-2.5 py-1 rounded-md font-semibold">{c.role}</span>
+                </div>
+                <p className="text-sm text-gray-600 flex items-center gap-2 mb-2"><Phone size={14} className="text-sage-500"/> {phoneNumber}</p>
+                {c.notes && <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded-lg">{c.notes}</p>}
               </div>
-              <p className="text-sm text-gray-600 flex items-center gap-2 mb-2"><Phone size={14} className="text-sage-500"/> {c.noHp}</p>
-              {c.notes && <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded-lg">{c.notes}</p>}
+              <div className="flex justify-end items-center gap-3 mt-4 pt-3 border-t border-gray-100">
+                <a href={`https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-xs bg-sage-500 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-sage-900 transition-colors">Chat WA</a>
+                <button onClick={() => handleEdit(c)} className="text-gray-400 hover:text-blue-500 transition-colors"><Edit size={16}/></button>
+                <button onClick={() => handleDelete(c.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
+              </div>
             </div>
-            <div className="flex justify-end items-center gap-3 mt-4 pt-3 border-t border-gray-100">
-              <a href={`https://wa.me/${c.noHp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-xs bg-sage-500 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-sage-900 transition-colors">Chat WA</a>
-              <button onClick={() => handleEdit(c)} className="text-gray-400 hover:text-blue-500 transition-colors"><Edit size={16}/></button>
-              <button onClick={() => handleDelete(c.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {(!filteredContacts || filteredContacts.length === 0) && (
           <div className="col-span-full bg-white p-8 rounded-2xl text-center text-gray-400 border border-sage-50">Tidak ada kontak yang sesuai dengan pencarian.</div>
         )}
