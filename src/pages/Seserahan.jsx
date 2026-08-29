@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { WeddingContext } from '../context/WeddingContext';
-import { Plus, Trash2, ExternalLink, Edit, ArrowUpDown, Filter } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Edit, ArrowUpDown, Filter, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { supabase } from '../supabaseClient';
 
@@ -9,7 +9,8 @@ export default function Seserahan() {
   const [newItem, setNewItem] = useState({ item: '', status: 'Belum', harga: '', link: '', keterangan: '', qty: 1 });
   const [editId, setEditId] = useState(null); 
 
-  // State untuk Filter & Urutkan
+  // State untuk Search, Filter, & Urutkan
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [sortBy, setSortBy] = useState('default');
 
@@ -50,10 +51,16 @@ export default function Seserahan() {
     if (!error) setSeserahan(seserahan.map(s => s.id === item.id ? { ...s, status: newStatus } : s));
   };
 
-  // Logika Filter & Urutkan data
+  // Logika Pencarian, Filter & Urutkan data seserahan
   const filteredSeserahan = seserahan.filter(s => {
-    if (filterStatus === 'Semua') return true;
-    return s.status === filterStatus;
+    const matchesSearch = 
+      s.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.keterangan && s.keterangan.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.link && s.link.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesFilter = filterStatus === 'Semua' || s.status === filterStatus;
+
+    return matchesSearch && matchesFilter;
   }).sort((a, b) => {
     if (sortBy === 'namaAsc') return a.item.localeCompare(b.item);
     if (sortBy === 'namaDesc') return b.item.localeCompare(a.item);
@@ -90,28 +97,44 @@ export default function Seserahan() {
         </div>
       </div>
 
-      {/* Bagian Filter & Urutkan */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-sage-50 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Filter size={18} className="text-sage-700" />
-          <span className="text-sm font-bold text-sage-900">Filter Status:</span>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer">
-            <option value="Semua">Semua Status</option>
-            <option value="Belum">Belum</option>
-            <option value="Sudah">Sudah</option>
-          </select>
+      {/* Bagian Search, Filter & Urutkan Seserahan */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-sage-50 flex flex-col lg:flex-row justify-between items-center gap-4">
+        {/* Kolom Search Manual */}
+        <div className="relative w-full lg:w-1/3">
+          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Cari item, keterangan..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
+          />
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <ArrowUpDown size={18} className="text-sage-700" />
-          <span className="text-sm font-bold text-sage-900">Urutkan:</span>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer">
-            <option value="default">Default (Waktu Input)</option>
-            <option value="namaAsc">Nama (A - Z)</option>
-            <option value="namaDesc">Nama (Z - A)</option>
-            <option value="hargaAsc">Total Harga (Termurah)</option>
-            <option value="hargaDesc">Total Harga (Termahal)</option>
-          </select>
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+          {/* Filter Status */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Filter size={18} className="text-sage-700" />
+            <span className="text-sm font-bold text-sage-900">Status:</span>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+              <option value="Semua">Semua Status</option>
+              <option value="Belum">Belum</option>
+              <option value="Sudah">Sudah</option>
+            </select>
+          </div>
+
+          {/* Urutkan */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <ArrowUpDown size={18} className="text-sage-700" />
+            <span className="text-sm font-bold text-sage-900">Urutkan:</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="p-2 border rounded-lg text-xs font-semibold outline-none bg-gray-50 cursor-pointer flex-1 sm:flex-initial">
+              <option value="default">Default</option>
+              <option value="namaAsc">Nama (A - Z)</option>
+              <option value="namaDesc">Nama (Z - A)</option>
+              <option value="hargaAsc">Total Harga (Termurah)</option>
+              <option value="hargaDesc">Total Harga (Termahal)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -131,7 +154,10 @@ export default function Seserahan() {
           <tbody className="divide-y divide-gray-100">
             {filteredSeserahan?.map(s => (
               <tr key={s.id} className="hover:bg-gray-50">
-                <td className="p-4 font-medium text-sage-900">{s.item}</td>
+                <td className="p-4 font-medium text-sage-900">
+                  {s.item}
+                  {s.keterangan && <div className="text-xs text-gray-500 font-normal">{s.keterangan}</div>}
+                </td>
                 <td className="p-4">{formatIDR(s.harga)}</td>
                 <td className="p-4 font-bold">{s.qty}</td>
                 <td className="p-4 font-bold text-gold-600">{formatIDR(s.harga * s.qty)}</td>
@@ -151,7 +177,7 @@ export default function Seserahan() {
               </tr>
             ))}
             {(!filteredSeserahan || filteredSeserahan.length === 0) && (
-              <tr><td colSpan="7" className="p-8 text-center text-gray-400">Tidak ada data seserahan yang sesuai.</td></tr>
+              <tr><td colSpan="7" className="p-8 text-center text-gray-400">Tidak ada data seserahan yang sesuai dengan pencarian.</td></tr>
             )}
           </tbody>
         </table>
