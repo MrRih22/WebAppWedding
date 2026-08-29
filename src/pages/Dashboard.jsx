@@ -80,10 +80,10 @@ export default function Dashboard() {
             <YAxis stroke="#879A83" tickFormatter={(value) => `Rp${value/1000000}M`} />
             <Tooltip formatter={(value) => formatIDR(value)} />
             <Legend />
-            <Bar dataKey="Target Dana" fill="#2C362A" />
-            <Bar dataKey="Terkumpul" fill="#D4AF37" />
-            <Bar dataKey="Kebutuhan" fill="#E9ECE8" />
-            <Bar dataKey="Dibayar" fill="#879A83" />
+            <Bar dataKey="Target Dana" fill="#2C2A36" />
+            <Bar dataKey="Terkumpul" fill="#0045C5" />
+            <Bar dataKey="Kebutuhan" fill="#FFE600" />
+            <Bar dataKey="Dibayar" fill="#2BFF00" />
           </BarChart>
         </ResponsiveContainer>
       </div>
