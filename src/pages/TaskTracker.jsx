@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { WeddingContext } from '../context/WeddingContext';
-import { Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 export default function TaskTracker() {
@@ -26,10 +26,16 @@ export default function TaskTracker() {
     }
   };
 
-  const handleStatusChange = async (item, newStatus) => {
-    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', item.id);
+  // Fungsi siklus status: Belum -> In Progress -> Selesai -> Belum
+  const handleStatusCycle = async (item) => {
+    let nextStatus = 'Belum';
+    if (item.status === 'Belum') nextStatus = 'In Progress';
+    else if (item.status === 'In Progress') nextStatus = 'Selesai';
+    else if (item.status === 'Selesai') nextStatus = 'Belum';
+
+    const { error } = await supabase.from('tasks').update({ status: nextStatus }).eq('id', item.id);
     if (!error) {
-      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: newStatus } : t));
+      setTasks(tasks.map(t => t.id === item.id ? { ...t, status: nextStatus } : t));
     }
   };
 
@@ -37,7 +43,7 @@ export default function TaskTracker() {
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage-50">
         <h3 className="text-lg font-bold text-sage-900 mb-4">Tambah Tugas Baru (Cloud)</h3>
-        <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <input type="text" placeholder="Nama Tugas" required className="p-3 border rounded-lg text-sm md:col-span-2 outline-none focus:ring-2 focus:ring-sage-500" value={newItem.jenis} onChange={e => setNewItem({...newItem, jenis: e.target.value})} />
           <select className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.pic} onChange={e => setNewItem({...newItem, pic: e.target.value})}>
             <option value="Azzam">Azzam</option>
@@ -45,6 +51,13 @@ export default function TaskTracker() {
             <option value="Bersama">Bersama</option>
           </select>
           <input type="date" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.deadline} onChange={e => setNewItem({...newItem, deadline: e.target.value})} />
+          
+          <select className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.status} onChange={e => setNewItem({...newItem, status: e.target.value})}>
+            <option value="Belum">Belum</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+
           <button type="submit" className="bg-sage-500 text-white p-3 rounded-lg hover:bg-sage-900 flex items-center justify-center gap-2 font-medium transition-colors">
             <Plus size={18} /> Tambah
           </button>
@@ -58,7 +71,7 @@ export default function TaskTracker() {
               <th className="p-4">Tugas</th>
               <th className="p-4">PIC</th>
               <th className="p-4">Deadline</th>
-              <th className="p-4">Status</th>
+              <th className="p-4">Status (Klik untuk ubah)</th>
               <th className="p-4 text-center">Aksi</th>
             </tr>
           </thead>
@@ -74,10 +87,18 @@ export default function TaskTracker() {
                 <td className="p-4 text-gray-600">{t.deadline}</td>
                 <td className="p-4">
                   <button 
-                    onClick={() => handleStatusChange(t, t.status === 'Selesai' ? 'Belum' : 'Selesai')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${t.status === 'Selesai' ? 'bg-sage-100 text-sage-800' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                    onClick={() => handleStatusCycle(t)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+                      t.status === 'Selesai' 
+                        ? 'bg-sage-100 text-sage-800' 
+                        : t.status === 'In Progress' 
+                        ? 'bg-blue-50 text-blue-600 border border-blue-200' 
+                        : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                    }`}
                   >
-                    {t.status === 'Selesai' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                    {t.status === 'Selesai' && <CheckCircle size={14} />}
+                    {t.status === 'In Progress' && <AlertCircle size={14} />}
+                    {t.status === 'Belum' && <Clock size={14} />}
                     {t.status}
                   </button>
                 </td>
