@@ -92,7 +92,7 @@ export const WeddingProvider = ({ children }) => {
 
   const login = (username, password) => {
     if ((username === 'Azzam' || username === 'Irma') && password === '060626') {
-      const expiryTime = new Date().getTime() + (24 * 60 * 60 * 1000); 
+      const expiryTime = new Date().getTime() + (1 * 60 * 60 * 1000); // Masa aktif 1 jam
       localStorage.setItem('wedding_session', JSON.stringify({ username, expiry: expiryTime }));
       setUser(username);
       return true;
