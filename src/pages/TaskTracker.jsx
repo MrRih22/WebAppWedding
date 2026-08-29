@@ -52,11 +52,6 @@ export default function TaskTracker() {
           </select>
           <input type="date" required className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.deadline} onChange={e => setNewItem({...newItem, deadline: e.target.value})} />
           
-          <select className="p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-sage-500" value={newItem.status} onChange={e => setNewItem({...newItem, status: e.target.value})}>
-            <option value="Belum">Belum</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Selesai">Selesai</option>
-          </select>
 
           <button type="submit" className="bg-sage-500 text-white p-3 rounded-lg hover:bg-sage-900 flex items-center justify-center gap-2 font-medium transition-colors">
             <Plus size={18} /> Tambah
