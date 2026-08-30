@@ -69,6 +69,9 @@ export default function Seserahan() {
     return 0; // Default
   });
 
+  // Hitung jumlah item saja
+  const totalItemCount = filteredSeserahan.length;
+
   const totalSudah = seserahan.filter(s => s.status === 'Sudah').reduce((acc, s) => acc + (Number(s.harga) * Number(s.qty)), 0);
   const totalBelum = seserahan.filter(s => s.status === 'Belum').reduce((acc, s) => acc + (Number(s.harga) * Number(s.qty)), 0);
   const chartData = [];
@@ -97,18 +100,24 @@ export default function Seserahan() {
         </div>
       </div>
 
-      {/* Bagian Search, Filter & Urutkan Seserahan */}
+      {/* Bagian Search, Filter, Urutkan & Informasi Jumlah Item */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-sage-50 flex flex-col lg:flex-row justify-between items-center gap-4">
         {/* Kolom Search Manual */}
-        <div className="relative w-full lg:w-1/3">
-          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Cari item, keterangan..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
-          />
+        <div className="relative w-full lg:w-1/3 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-3 top-3 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Cari item, keterangan..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              className="w-full pl-10 pr-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-sage-500 bg-gray-50 font-medium" 
+            />
+          </div>
+          {/* Label Informasi Jumlah Item (Hanya Jumlah Item) */}
+          <div className="bg-sage-50 text-sage-900 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap border border-sage-100">
+            {totalItemCount} Item
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
