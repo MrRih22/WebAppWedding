@@ -13,7 +13,7 @@ import ContactInfo from './pages/ContactInfo';
 import Nabung from './pages/Nabung';
 import { Menu, X, Home, Wallet, CheckSquare, Users, Gift, Sparkles, Phone, PiggyBank, LogOut, Coins } from 'lucide-react';
 
-// Komponen Menu Mobile (Garis Tiga) untuk Halaman yang Diproteksi
+// Komponen Wrapper: Tampilan Laptop Bersih, Tampilan HP Memiliki Tombol Menu Melayang
 const MobileMenuWrapper = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -40,7 +40,7 @@ const MobileMenuWrapper = ({ children }) => {
     <Layout>
       {children}
 
-      {/* Pop-up Menu Garis Tiga (Mobile Navigation) */}
+      {/* Pop-up Menu Garis Tiga (Hanya muncul jika tombol menu diklik) */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
@@ -86,13 +86,13 @@ const MobileMenuWrapper = ({ children }) => {
         </div>
       )}
 
-      {/* Bar Navigasi Melayang di Bawah Khusus HP */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 py-3 px-6 flex justify-center items-center z-40 shadow-lg">
+      {/* Bar Navigasi Melayang di Bawah -> Diberi kelas 'md:hidden' agar HANYA MUNCUL DI HP, Laptop Aman! */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 py-3 px-6 flex justify-center items-center z-40 shadow-lg md:hidden">
         <button
           onClick={() => setIsOpen(true)}
           className="flex items-center gap-2 bg-sage-500 text-white px-5 py-2.5 rounded-2xl shadow-md hover:bg-sage-900 transition-colors"
         >
-          <Menu size={10} />
+          <Menu size={18} />
           <span className="text-xs font-bold">Menu</span>
         </button>
       </div>
